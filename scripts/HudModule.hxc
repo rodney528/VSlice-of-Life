@@ -1,0 +1,118 @@
+import funkin.modding.module.Module;
+
+import funkin.play.scoring.Scoring;
+import funkin.play.PlayState;
+
+import funkin.ui.freeplay.FreeplayRank;
+import funkin.ui.FullScreenScaleMode;
+import funkin.ui.PixelatedIcon;
+
+import funkin.Preferences;
+import funkin.Highscore;
+
+import flixel.FlxG;
+
+class VSliceOfLifeHUD extends Module {
+	public function new() {
+		super('VSlice of Life HUD');
+	}
+
+	var rankSprite:FreeplayRank;
+	function initRankSprite(pos:Array<Float>, scale:Float, zIndex:Int, camera):FreeplayRank {
+		pos = pos ?? [0, 0];
+		scale = scale ?? 2;
+		var rank = new FreeplayRank(pos[0] ?? 0, pos[1] ?? 0);
+		rank.scale.set(scale, scale);
+		rank.cameras = [camera ?? FlxG.camera];
+		rank.zIndex = zIndex ?? rank.zIndex;
+		return rank;
+	}
+	var updateOnUpdate:Bool = false;
+	function updateRankSpriteRank(?forceRank:String):Void {
+		if (rankSprite != null) { // This doesn't wanna FUCKING WORK.
+			var newRank = forceRank ?? Scoring.calculateRank(
+				{
+					score: PlayState.instance.songScore,
+					tallies:
+					{
+						sick: Highscore.tallies.sick,
+						good: Highscore.tallies.good,
+						bad: Highscore.tallies.bad,
+						shit: Highscore.tallies.shit,
+						missed: Highscore.tallies.missed,
+						combo: Highscore.tallies.combo,
+						maxCombo: Highscore.tallies.maxCombo,
+						totalNotesHit: Highscore.tallies.totalNotesHit,
+						totalNotes: Highscore.tallies.totalNotes
+					}
+				}
+			) ?? 'SHIT';
+			if (rankSprite.rank != newRank)
+				rankSprite.rank = newRank;
+			// trace(rankSprite.rank + ' ' + newRank);
+		}
+	}
+
+	var playerIcon:PixelatedIcon;
+	function initPlayerIcon(character:String, pos:Array<Float>, scale:Float, zIndex:Int, camera):PixelatedIcon {
+		pos = pos ?? [0, 0];
+		scale = scale ?? 2;
+		var icon = new PixelatedIcon(pos[0] ?? 0, pos[1] ?? 0);
+		icon.setCharacter(character);
+		scale += 1;
+		icon.scale.set(scale, scale);
+		icon.cameras = [camera ?? FlxG.camera];
+		icon.zIndex = zIndex ?? rank.zIndex;
+		return icon;
+	}
+
+	override public function onUpdate(event):Void {
+		super.onUpdate(event);
+		if (updateOnUpdate && PlayState.instance != null)
+			updateRankSpriteRank();
+	}
+
+	override public function onSongRetry(event):Void {
+		super.onSongRetry(event);
+		updateRankSpriteRank('SHIT');
+	}
+
+	override public function onStateChangeEnd(event):Void {
+		super.onStateChangeEnd(event);
+		if (event.targetState != PlayState.instance) return;
+
+		if (rankSprite == null) {
+			PlayState.instance.add(rankSprite = initRankSprite([110, Preferences.downscroll ? 15 : FlxG.height - 130], 2, 860, PlayState.instance.camHUD));
+			updateRankSpriteRank('SHIT');
+			trace('made da rank');
+		} else trace('didn\'t make da rank');
+		if (playerIcon == null) {
+			PlayState.instance.add(playerIcon = initPlayerIcon(PlayState.instance.currentStage.getBoyfriend().getHealthIconId(), [FlxG.width + 5, Preferences.downscroll ? 60 : FlxG.height - 90], 2.5, 860, PlayState.instance.camHUD));
+			trace('made da icon');
+		} else trace('didn\'t make da icon');
+
+		PlayState.instance.refresh();
+	}
+
+	override public function onStateChangeBegin(event):Void {
+		super.onStateChangeBegin(event);
+		rankSprite = null;
+		playerIcon = null;
+	}
+
+	override public function onNoteHit(event):Void {
+		super.onNoteHit(event);
+		if (!updateOnUpdate && PlayState.instance != null && event.note.noteData.getMustHitNote())
+			updateRankSpriteRank();
+	}
+	override public function onNoteMiss(event):Void {
+		super.onNoteMiss(event);
+		if (!updateOnUpdate && PlayState.instance != null && event.note.noteData.getMustHitNote())
+			updateRankSpriteRank();
+	}
+	override public function onNoteHoldDrop(event):Void {
+		super.onNoteHoldDrop(event);
+		if (!updateOnUpdate && PlayState.instance != null && event.holdNote.noteData.getMustHitNote())
+			updateRankSpriteRank();
+	}
+}

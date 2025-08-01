@@ -1,0 +1,12 @@
+{
+	"title": "VSlice of Life",
+	"description": "A neat VSlice HUD!",
+	"contributors": [
+		{
+			"name": "💜 Rodney, An Imaginative Furball 💙",
+			"role": "The only guy who worked on this."
+		}
+	],
+	"api_version": "0.7.3",
+	"mod_version": "0.1.0"
+}
