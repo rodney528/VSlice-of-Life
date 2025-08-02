@@ -28,7 +28,7 @@ class VSliceOfLifeHUD extends Module {
 		return rank;
 	}
 	var updateOnUpdate:Bool = false;
-	function updateRankSpriteRank(?forceRank:String):Void {
+	function updateRank(?forceRank:String):Void {
 		if (rankSprite != null) { // This doesn't wanna FUCKING WORK.
 			var newRank = forceRank ?? Scoring.calculateRank(
 				{
@@ -47,9 +47,14 @@ class VSliceOfLifeHUD extends Module {
 					}
 				}
 			) ?? 'SHIT';
-			if (rankSprite.rank != newRank)
+			if (rankSprite.rank != newRank) {
 				rankSprite.rank = newRank;
-			// trace(rankSprite.rank + ' ' + newRank);
+				if (playerIcon != null)
+					if (newRank != 'PERFECT' || newRank != 'PERFECT_GOLD')
+						playerIcon.animation.play('idle', true);
+					else if (playerIcon.animation.name != 'confirm')
+						playerIcon.animation.play('confirm', true);
+			}
 		}
 	}
 
@@ -59,6 +64,8 @@ class VSliceOfLifeHUD extends Module {
 		scale = scale ?? 2;
 		var icon = new PixelatedIcon(pos[0] ?? 0, pos[1] ?? 0);
 		icon.setCharacter(character);
+		if (!icon.visible)
+			icon.setCharacter('bf');
 		scale += 1;
 		icon.scale.set(scale, scale);
 		icon.cameras = [camera ?? FlxG.camera];
@@ -69,12 +76,12 @@ class VSliceOfLifeHUD extends Module {
 	override public function onUpdate(event):Void {
 		super.onUpdate(event);
 		if (updateOnUpdate && PlayState.instance != null)
-			updateRankSpriteRank();
+			updateRank();
 	}
 
 	override public function onSongRetry(event):Void {
 		super.onSongRetry(event);
-		updateRankSpriteRank('SHIT');
+		updateRank('SHIT');
 	}
 
 	override public function onStateChangeEnd(event):Void {
@@ -83,7 +90,7 @@ class VSliceOfLifeHUD extends Module {
 
 		if (rankSprite == null) {
 			PlayState.instance.add(rankSprite = initRankSprite([110, Preferences.downscroll ? 15 : FlxG.height - 130], 2, 860, PlayState.instance.camHUD));
-			updateRankSpriteRank('SHIT');
+			updateRank('SHIT');
 			trace('made da rank');
 		} else trace('didn\'t make da rank');
 		if (playerIcon == null) {
@@ -103,16 +110,16 @@ class VSliceOfLifeHUD extends Module {
 	override public function onNoteHit(event):Void {
 		super.onNoteHit(event);
 		if (!updateOnUpdate && PlayState.instance != null && event.note.noteData.getMustHitNote())
-			updateRankSpriteRank();
+			updateRank();
 	}
 	override public function onNoteMiss(event):Void {
 		super.onNoteMiss(event);
 		if (!updateOnUpdate && PlayState.instance != null && event.note.noteData.getMustHitNote())
-			updateRankSpriteRank();
+			updateRank();
 	}
 	override public function onNoteHoldDrop(event):Void {
 		super.onNoteHoldDrop(event);
 		if (!updateOnUpdate && PlayState.instance != null && event.holdNote.noteData.getMustHitNote())
-			updateRankSpriteRank();
+			updateRank();
 	}
 }

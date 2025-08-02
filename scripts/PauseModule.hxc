@@ -1,0 +1,86 @@
+import funkin.data.freeplay.style.FreeplayStyleRegistry;
+import funkin.data.freeplay.player.PlayerRegistry;
+
+import funkin.data.story.level.LevelRegistry;
+import funkin.data.song.SongRegistry;
+
+import funkin.modding.module.Module;
+
+import funkin.play.PlayStatePlaylist;
+import funkin.play.PauseSubState;
+import funkin.play.PlayState;
+
+import funkin.ui.freeplay.FreeplaySongData;
+import funkin.ui.freeplay.FreeplayState;
+import funkin.ui.freeplay.SongMenuItem;
+import funkin.ui.FullScreenScaleMode;
+
+import funkin.util.Constants;
+
+import flixel.FlxG;
+
+class VSliceOfLifePauseMenu extends Module {
+	var	state = null;
+	public function new():Void {
+		super('VSlice of Life Pause Menu');
+	}
+
+	var capsule:SongMenuItem;
+	var capsulePosition:Array<Float> = [-50, 10];
+	function initCapsule():SongMenuItem {
+		var song:SongMenuItem = new SongMenuItem(capsulePosition[0], capsulePosition[1]);
+		song.targetPos.set(song.x, song.y);
+		var fetchPlayableCharacter = () -> {
+			var result = PlayerRegistry.instance.fetchEntry(FreeplayState.rememberedCharacterId);
+			if (result == null)
+				result = PlayerRegistry.instance.fetchEntry(Constants.DEFAULT_CHARACTER);
+			return result;
+		}
+		var songData = SongRegistry.instance.fetchEntry(PlayState.instance.currentSong.id);
+		var levelData = LevelRegistry.instance.fetchEntry(PlayStatePlaylist.campaignId);
+		song.initData(songData == null || levelData == null ? null : new FreeplaySongData(songData, levelData), FreeplayStyleRegistry.instance.fetchEntry(fetchPlayableCharacter().getFreeplayStyleID()));
+		song.forcePosition();
+		song.checkClip();
+		song.selected = true;
+		song.newText.visible = false;
+		return song;
+	}
+
+	override public function onUpdate(event):Void {
+		super.onUpdate(event);
+		if (capsule != null && capsule.doJumpIn)
+			capsule.targetPos.set(capsulePosition[0], capsulePosition[1]);
+	}
+
+	public function onSubStateOpenEnd(event):Void {
+		super.onSubStateOpenEnd(event);
+		if (!(event.targetState is PauseSubState)) return;
+		state = event.targetState;
+
+		if (capsule == null) {
+			event.targetState.add(capsule = initCapsule());
+			trace('made da capsule');
+		} else {
+			trace('didn\'t make da capsule, trying again');
+			if (capsule == null) {
+				event.targetState.add(capsule = initCapsule());
+				trace('made da capsule');
+			} else trace('didn\'t make da capsule');
+		}
+	}
+
+	public function onSubStateCloseEnd(event):Void {
+		super.onSubStateCloseEnd(event);
+		if (!(event.targetState is PauseSubState)) return;
+		state = null;
+		if (capsule.songText != null) {
+			if (capsule.songText.moveTimer != null)
+				capsule.songText.moveTimer.cancel();
+			if (capsule.songText.moveTween != null)
+				capsule.songText.moveTween.cancel();
+		}
+		if (capsule.sparkleTimer != null)
+			capsule.sparkleTimer.cancel();
+		capsule = null;
+	}
+}
