@@ -50,10 +50,13 @@ class VSliceOfLifeHUD extends Module {
 			if (rankSprite.rank != newRank) {
 				rankSprite.rank = newRank;
 				if (playerIcon != null)
-					if (newRank != 'PERFECT' || newRank != 'PERFECT_GOLD')
-						playerIcon.animation.play('idle', true);
-					else if (playerIcon.animation.name != 'confirm')
-						playerIcon.animation.play('confirm', true);
+					if (newRank == 'PERFECT' || newRank == 'PERFECT_GOLD') {
+						if (playerIcon.animation.name == 'confirm' || playerIcon.animation.name == 'confirm-hold') {} else
+							playerIcon.animation.play('confirm', true);
+					} else {
+						if (playerIcon.animation.name != 'idle')
+							playerIcon.animation.play('idle', true);
+					}
 			}
 		}
 	}
