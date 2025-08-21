@@ -1,6 +1,7 @@
 import funkin.modding.module.Module;
 
 import funkin.play.scoring.Scoring;
+import funkin.play.PlayStatePlaylist;
 import funkin.play.PlayState;
 
 import funkin.ui.freeplay.FreeplayRank;
@@ -30,20 +31,21 @@ class VSliceOfLifeHUD extends Module {
 	var updateOnUpdate:Bool = false;
 	function updateRank(?forceRank:String):Void {
 		if (rankSprite != null) { // This doesn't wanna FUCKING WORK.
+			var tallies = PlayStatePlaylist.isStoryMode ? Highscore.talliesLevel : Highscore.tallies;
 			var newRank = forceRank ?? Scoring.calculateRank(
 				{
 					score: PlayState.instance.songScore,
 					tallies:
 					{
-						sick: Highscore.tallies.sick,
-						good: Highscore.tallies.good,
-						bad: Highscore.tallies.bad,
-						shit: Highscore.tallies.shit,
-						missed: Highscore.tallies.missed,
-						combo: Highscore.tallies.combo,
-						maxCombo: Highscore.tallies.maxCombo,
-						totalNotesHit: Highscore.tallies.totalNotesHit,
-						totalNotes: Highscore.tallies.totalNotes
+						sick: tallies.sick,
+						good: tallies.good,
+						bad: tallies.bad,
+						shit: tallies.shit,
+						missed: tallies.missed,
+						combo: tallies.combo,
+						maxCombo: tallies.maxCombo,
+						totalNotesHit: tallies.totalNotesHit,
+						totalNotes: tallies.totalNotes
 					}
 				}
 			) ?? 'SHIT';
@@ -84,7 +86,7 @@ class VSliceOfLifeHUD extends Module {
 
 	override public function onSongRetry(event):Void {
 		super.onSongRetry(event);
-		updateRank('SHIT');
+		updateRank(PlayStatePlaylist.isStoryMode ? null : 'SHIT');
 	}
 
 	override public function onStateChangeEnd(event):Void {
