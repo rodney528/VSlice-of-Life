@@ -71,6 +71,8 @@ class VSliceOfLifeHUD extends Module {
 		icon.setCharacter(character);
 		if (!icon.visible)
 			icon.setCharacter('bf');
+		icon.pixelPerfectRender = true;
+		icon.pixelPerfectPosition = true;
 		scale += 1;
 		icon.scale.set(scale, scale);
 		icon.cameras = [camera ?? FlxG.camera];
