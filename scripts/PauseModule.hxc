@@ -41,6 +41,7 @@ class VSliceOfLifePauseMenu extends Module {
 		song.initData(songData == null || levelData == null ? null : new FreeplaySongData(songData, levelData), FreeplayStyleRegistry.instance.fetchEntry(fetchPlayableCharacter().getFreeplayStyleID()));
 		song.forcePosition();
 		song.checkClip();
+		song.x -= 100000;
 		song.selected = true;
 		song.newText.visible = false;
 		return song;
