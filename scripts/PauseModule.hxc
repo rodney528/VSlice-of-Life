@@ -58,30 +58,35 @@ class VSliceOfLifePauseMenu extends Module {
 		if (!(event.targetState is PauseSubState)) return;
 		state = event.targetState;
 
-		if (capsule == null) {
-			event.targetState.add(capsule = initCapsule());
-			trace('made da capsule');
-		} else {
-			trace('didn\'t make da capsule, trying again');
+		var retryCount:Int = -1;
+		function _makeDaFuckinCapsuleDammit():Void {
 			if (capsule == null) {
 				event.targetState.add(capsule = initCapsule());
 				trace('made da capsule');
-			} else trace('didn\'t make da capsule');
+			} else {
+				retryCount++;
+				trace('didn\'t make da capsule, trying again');
+				if (retryCount < 1000) _makeDaFuckinCapsuleDammit();
+				else trace('didn\'t make da capsule... somehow???');
+			}
 		}
+		_makeDaFuckinCapsuleDammit();
 	}
 
 	public function onSubStateCloseEnd(event):Void {
 		super.onSubStateCloseEnd(event);
 		if (!(event.targetState is PauseSubState)) return;
 		state = null;
-		if (capsule.songText != null) {
-			if (capsule.songText.moveTimer != null)
-				capsule.songText.moveTimer.cancel();
-			if (capsule.songText.moveTween != null)
-				capsule.songText.moveTween.cancel();
+		if (capsule != null) {
+			if (capsule.songText != null) {
+				if (capsule.songText.moveTimer != null)
+					capsule.songText.moveTimer.cancel();
+				if (capsule.songText.moveTween != null)
+					capsule.songText.moveTween.cancel();
+			}
+			if (capsule.sparkleTimer != null)
+				capsule.sparkleTimer.cancel();
 		}
-		if (capsule.sparkleTimer != null)
-			capsule.sparkleTimer.cancel();
 		capsule = null;
 	}
 }
