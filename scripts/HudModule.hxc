@@ -32,9 +32,10 @@ class VSliceOfLifeHUD extends Module {
 	function updateRank(?forceRank:String):Void {
 		if (rankSprite != null) { // This doesn't wanna FUCKING WORK.
 			var tallies = PlayStatePlaylist.isStoryMode ? Highscore.talliesLevel : Highscore.tallies;
+			// TODO: Figure out what's going wrong.
 			var newRank = forceRank ?? Scoring.calculateRank(
 				{
-					score: PlayState.instance.songScore,
+					score: PlayStatePlaylist.isStoryMode ? PlayStatePlaylist.campaignScore + PlayState.instance.songScore : PlayState.instance.songScore,
 					tallies:
 					{
 						sick: tallies.sick,
@@ -44,7 +45,7 @@ class VSliceOfLifeHUD extends Module {
 						missed: tallies.missed,
 						combo: tallies.combo,
 						maxCombo: tallies.maxCombo,
-						totalNotesHit: tallies.totalNotesHit,
+						totalNotesHit: tallies.totalNotes - tallies.missed, // tallies.totalNotesHit,
 						totalNotes: tallies.totalNotes
 					}
 				}

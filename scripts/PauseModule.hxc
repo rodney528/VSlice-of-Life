@@ -36,9 +36,8 @@ class VSliceOfLifePauseMenu extends Module {
 				result = PlayerRegistry.instance.fetchEntry(Constants.DEFAULT_CHARACTER);
 			return result;
 		}
-		var songData = SongRegistry.instance.fetchEntry(PlayState.instance.currentSong.id);
 		var levelData = LevelRegistry.instance.fetchEntry(PlayStatePlaylist.campaignId);
-		song.initData(songData == null || levelData == null ? null : new FreeplaySongData(songData, levelData), FreeplayStyleRegistry.instance.fetchEntry(fetchPlayableCharacter().getFreeplayStyleID()));
+		song.initData(levelData == null ? null : new FreeplaySongData(PlayState.instance.currentSong.id, levelData), FreeplayStyleRegistry.instance.fetchEntry(fetchPlayableCharacter().getFreeplayStyleID()));
 		song.forcePosition();
 		song.checkClip();
 		song.x -= 100000;
