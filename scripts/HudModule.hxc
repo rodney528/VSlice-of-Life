@@ -67,7 +67,7 @@ class VSliceOfLifeHUD extends Module {
 		}
 	}
 	function updateLevelRank(?forceRank:String):Void {
-		if (levelRank != null && (PlayStatePlaylist.isStoryMode && (PlayStatePlaylist.campaignScore > 0 || PlayStatePlaylist.playlistSongIds.length > 0))) {
+		if (levelRank != null && (PlayStatePlaylist.isStoryMode && PlayStatePlaylist.campaignScore > 0 && PlayStatePlaylist.playlistSongIds.length > 0)) {
 			var newRank = getRank(forceRank);
 			if (levelRank.rank != newRank) {
 				levelRank.rank = newRank;
@@ -181,7 +181,7 @@ class VSliceOfLifeHUD extends Module {
 			}
 		}
 		_makeRankSprite();
-		if (PlayStatePlaylist.isStoryMode && (PlayStatePlaylist.campaignScore > 0 || PlayStatePlaylist.playlistSongIds.length > 0)) {
+		if (PlayStatePlaylist.isStoryMode && PlayStatePlaylist.campaignScore > 0 && PlayStatePlaylist.playlistSongIds.length > 0) {
 			var retryCount:Int = 0;
 			function _makeLevelRankSprite():Void {
 				try {
