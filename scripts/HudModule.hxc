@@ -1,5 +1,7 @@
 import funkin.modding.module.Module;
 
+import funkin.ui.debug.charting.ChartEditorState;
+
 import funkin.play.scoring.Scoring;
 import funkin.play.PlayStatePlaylist;
 import funkin.play.PlayState;
@@ -11,6 +13,8 @@ import funkin.ui.PixelatedIcon;
 import funkin.Preferences;
 import funkin.Highscore;
 
+import flixel.util.FlxTimer;
+
 import flixel.FlxG;
 
 class VSliceOfLifeHUD extends Module {
@@ -19,6 +23,7 @@ class VSliceOfLifeHUD extends Module {
 	}
 
 	var rankSprite:FreeplayRank;
+	var levelRank:FreeplayRank;
 	function initRankSprite(pos:Array<Float>, scale:Float, zIndex:Int, camera):FreeplayRank {
 		pos = pos ?? [0, 0];
 		scale = scale ?? 2;
@@ -29,37 +34,80 @@ class VSliceOfLifeHUD extends Module {
 		return rank;
 	}
 	var updateOnUpdate:Bool = false;
-	function updateRank(?forceRank:String):Void {
-		if (rankSprite != null) { // This doesn't wanna FUCKING WORK.
-			var tallies = PlayStatePlaylist.isStoryMode ? Highscore.talliesLevel : Highscore.tallies;
-			// TODO: Figure out what's going wrong.
-			var newRank = forceRank ?? Scoring.calculateRank(
+	function getRank(?forceRank:String, ?songOnly:Bool):String {
+		songOnly ??= false;
+		var doLevel:Bool = PlayStatePlaylist.isStoryMode && !songOnly;
+		var tallies = doLevel ? Highscore.combineTallies(Highscore.tallies, Highscore.talliesLevel) : Highscore.tallies;
+		var newRank = forceRank ?? Scoring.calculateRank(
+			{
+				score: doLevel ? PlayStatePlaylist.campaignScore + PlayState.instance.songScore : PlayState.instance.songScore,
+				tallies:
 				{
-					score: PlayStatePlaylist.isStoryMode ? PlayStatePlaylist.campaignScore + PlayState.instance.songScore : PlayState.instance.songScore,
-					tallies:
-					{
-						sick: tallies.sick,
-						good: tallies.good,
-						bad: tallies.bad,
-						shit: tallies.shit,
-						missed: tallies.missed,
-						combo: tallies.combo,
-						maxCombo: tallies.maxCombo,
-						totalNotesHit: tallies.totalNotes - tallies.missed, // tallies.totalNotesHit,
-						totalNotes: tallies.totalNotes
-					}
+					sick: tallies.sick,
+					good: tallies.good,
+					bad: tallies.bad,
+					shit: tallies.shit,
+					missed: tallies.missed,
+					combo: tallies.combo,
+					maxCombo: tallies.maxCombo,
+					totalNotesHit: tallies.totalNotesHit,
+					totalNotes: /* rankdisplay */true ? tallies.totalNotesHit + tallies.missed : tallies.totalNotes
 				}
-			) ?? 'SHIT';
+			}
+		) ?? 'SHIT';
+		return newRank;
+	}
+	function updateSongRank(?forceRank:String):Void {
+		if (rankSprite != null) {
+			var newRank = getRank(forceRank, true);
 			if (rankSprite.rank != newRank) {
 				rankSprite.rank = newRank;
-				if (playerIcon != null)
-					if (newRank == 'PERFECT' || newRank == 'PERFECT_GOLD') {
-						if (playerIcon.animation.name == 'confirm' || playerIcon.animation.name == 'confirm-hold') {} else
-							playerIcon.animation.play('confirm', true);
-					} else {
-						if (playerIcon.animation.name != 'idle')
-							playerIcon.animation.play('idle', true);
-					}
+				iconWinCheck();
+			}
+		}
+	}
+	function updateLevelRank(?forceRank:String):Void {
+		if (levelRank != null && (PlayStatePlaylist.isStoryMode && (PlayStatePlaylist.campaignScore > 0 || PlayStatePlaylist.playlistSongIds.length > 0))) {
+			var newRank = getRank(forceRank);
+			if (levelRank.rank != newRank) {
+				levelRank.rank = newRank;
+				iconWinCheck();
+			}
+		}
+	}
+	function iconWinCheck():Void {
+		if (playerIcon != null) {
+			function getRankValue(?rank:String):Int {
+				switch (rank) {
+					case 'PERFECT_GOLD': return 5;
+					case 'PERFECT': return 4;
+					case 'EXCELLENT': return 3;
+					case 'GREAT': return 2;
+					case 'GOOD': return 1;
+					case 'SHIT': return 0;
+					default: return -1;
+				}
+			}
+			function compareGT(?a:String, ?b:String):Bool {
+				if (a != null && b == null) return true;
+				if (a == null || b == null) return false;
+
+				var temp1:Int = getRankValue(a);
+				var temp2:Int = getRankValue(b);
+
+				return temp1 > temp2;
+			}
+
+			var songRank = rankSprite == null ? null : rankSprite.rank;
+			var levelRank = levelRank == null ? null : levelRank.rank;
+
+			var highestRank = PlayStatePlaylist.isStoryMode ? (compareGT(songRank, levelRank) ? songRank : levelRank) : songRank;
+			if (highestRank == 'PERFECT' || highestRank == 'PERFECT_GOLD') {
+				if (playerIcon.animation.name == 'confirm' || playerIcon.animation.name == 'confirm-hold') {} else
+					playerIcon.animation.play('confirm', true);
+			} else {
+				if (playerIcon.animation.name != 'idle')
+					playerIcon.animation.play('idle', true);
 			}
 		}
 	}
@@ -83,51 +131,123 @@ class VSliceOfLifeHUD extends Module {
 
 	override public function onUpdate(event):Void {
 		super.onUpdate(event);
-		if (updateOnUpdate && PlayState.instance != null)
-			updateRank();
+		if (updateOnUpdate && PlayState.instance != null) {
+			updateSongRank();
+			updateLevelRank();
+		}
 	}
 
 	override public function onSongRetry(event):Void {
 		super.onSongRetry(event);
-		updateRank(PlayStatePlaylist.isStoryMode ? null : 'SHIT');
+		if (!updateOnUpdate) {
+			updateSongRank('SHIT');
+			updateLevelRank(PlayStatePlaylist.campaignScore > 0 ? null : 'SHIT');
+		}
+	}
+	override public function onSongStart(event):Void {
+		super.onSongStart(event);
+		if (!updateOnUpdate) {
+			updateSongRank('SHIT');
+			updateLevelRank(PlayStatePlaylist.campaignScore > 0 ? null : 'SHIT');
+		}
+	}
+
+	function stateOpen():Void {
+		var retryCount:Int = 0;
+		function _makePlayerIcon():Void {
+			try {
+				PlayState.instance.add(playerIcon = initPlayerIcon(PlayState.instance.currentStage.getBoyfriend().getHealthIconId(), [FlxG.width - 10, (Preferences.downscroll ? 80 : FlxG.height - 130)], 2.5, 860, PlayState.instance.camHUD));
+				trace('made da icon' + (retryCount < 1 ? '' : ' after ' + retryCount + ' attempts'));
+			} catch(e:Dynamic) {
+				retryCount++;
+				trace('didn\'t make da icon, trying again');
+				if (retryCount < 1000) _makePlayerIcon();
+				else trace('didn\'t make da icon... somehow???');
+			}
+		}
+		_makePlayerIcon();
+
+		var retryCount:Int = 0;
+		function _makeRankSprite():Void {
+			try {
+				PlayState.instance.add(rankSprite = initRankSprite([110, playerIcon.y - 15], 2, 860, PlayState.instance.camHUD));
+				updateSongRank('SHIT');
+				trace('made da song rank' + (retryCount < 1 ? '' : ' after ' + retryCount + ' attempts'));
+			} catch(e:Dynamic) {
+				retryCount++;
+				trace('didn\'t make da song rank, trying again');
+				if (retryCount < 1000) _makeRankSprite();
+				else trace('didn\'t make da song rank... somehow???');
+			}
+		}
+		_makeRankSprite();
+		if (PlayStatePlaylist.isStoryMode && (PlayStatePlaylist.campaignScore > 0 || PlayStatePlaylist.playlistSongIds.length > 0)) {
+			var retryCount:Int = 0;
+			function _makeLevelRankSprite():Void {
+				try {
+					PlayState.instance.add(levelRank = initRankSprite([rankSprite.x - 50, rankSprite.y + 15], 1.25, 860, PlayState.instance.camHUD));
+					updateLevelRank(PlayStatePlaylist.campaignScore > 0 ? null : 'SHIT');
+					trace('made da level rank' + (retryCount < 1 ? '' : ' after ' + retryCount + ' attempts'));
+				} catch(e:Dynamic) {
+					retryCount++;
+					trace('didn\'t make da level rank, trying again');
+					if (retryCount < 1000) _makeLevelRankSprite();
+					else trace('didn\'t make da level rank... somehow???');
+				}
+			}
+			_makeLevelRankSprite();
+		}
+		PlayState.instance.refresh();
+	}
+	function stateClose():Void {
+		rankSprite = null;
+		levelRank = null;
+		playerIcon = null;
 	}
 
 	override public function onStateChangeEnd(event):Void {
 		super.onStateChangeEnd(event);
-		if (event.targetState != PlayState.instance) return;
-
-		if (rankSprite == null) {
-			PlayState.instance.add(rankSprite = initRankSprite([110, Preferences.downscroll ? 15 : FlxG.height - 130], 2, 860, PlayState.instance.camHUD));
-			updateRank('SHIT');
-			trace('made da rank');
-		} else trace('didn\'t make da rank');
-		if (playerIcon == null) {
-			PlayState.instance.add(playerIcon = initPlayerIcon(PlayState.instance.currentStage.getBoyfriend().getHealthIconId(), [FlxG.width + 5, Preferences.downscroll ? 60 : FlxG.height - 90], 2.5, 860, PlayState.instance.camHUD));
-			trace('made da icon');
-		} else trace('didn\'t make da icon');
-
-		PlayState.instance.refresh();
+		if ((event.targetState is ChartEditorState) || (event.targetState is PlayState))
+			stateOpen();
 	}
-
 	override public function onStateChangeBegin(event):Void {
 		super.onStateChangeBegin(event);
-		rankSprite = null;
-		playerIcon = null;
+		if ((event.targetState is ChartEditorState) || (event.targetState is PlayState))
+			stateClose();
+	}
+	override public function onSubStateOpenEnd(event):Void {
+		super.onSubStateOpenEnd(event);
+		if (event.targetState is PlayState)
+			stateOpen();
+	}
+	override public function onSubStateCloseEnd(event):Void {
+		super.onSubStateCloseEnd(event);
+		if (event.targetState is PlayState)
+			stateClose();
 	}
 
 	override public function onNoteHit(event):Void {
 		super.onNoteHit(event);
 		if (!updateOnUpdate && PlayState.instance != null && event.note.noteData.getMustHitNote())
-			updateRank();
+			new FlxTimer().start(0.1, (_) -> {
+				updateSongRank();
+				updateLevelRank();
+			});
 	}
 	override public function onNoteMiss(event):Void {
 		super.onNoteMiss(event);
-		if (!updateOnUpdate && PlayState.instance != null && event.note.noteData.getMustHitNote())
-			updateRank();
+		if (!updateOnUpdate && event.note.noteData.getMustHitNote())
+			new FlxTimer().start(0.1, (_) -> {
+				updateSongRank();
+				updateLevelRank();
+			});
 	}
 	override public function onNoteHoldDrop(event):Void {
 		super.onNoteHoldDrop(event);
-		if (!updateOnUpdate && PlayState.instance != null && event.holdNote.noteData.getMustHitNote())
-			updateRank();
+		if (!updateOnUpdate && event.holdNote.noteData.getMustHitNote())
+			new FlxTimer().start(0.1, (_) -> {
+				updateSongRank();
+				updateLevelRank();
+			});
 	}
 }

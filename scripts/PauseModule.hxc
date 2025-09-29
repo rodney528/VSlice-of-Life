@@ -6,6 +6,8 @@ import funkin.data.song.SongRegistry;
 
 import funkin.modding.module.Module;
 
+import funkin.ui.debug.charting.ChartEditorState;
+
 import funkin.play.PlayStatePlaylist;
 import funkin.play.PauseSubState;
 import funkin.play.PlayState;
@@ -17,10 +19,7 @@ import funkin.ui.FullScreenScaleMode;
 
 import funkin.util.Constants;
 
-import flixel.FlxG;
-
 class VSliceOfLifePauseMenu extends Module {
-	var	state = null;
 	public function new():Void {
 		super('VSlice of Life Pause Menu');
 	}
@@ -55,14 +54,12 @@ class VSliceOfLifePauseMenu extends Module {
 	public function onSubStateOpenEnd(event):Void {
 		super.onSubStateOpenEnd(event);
 		if (!(event.targetState is PauseSubState)) return;
-		state = event.targetState;
-
-		var retryCount:Int = -1;
+		var retryCount:Int = 0;
 		function _makeDaFuckinCapsuleDammit():Void {
-			if (capsule == null) {
+			try {
 				event.targetState.add(capsule = initCapsule());
-				trace('made da capsule');
-			} else {
+				trace('made da capsule' + (retryCount < 1 ? '' : ' after ' + retryCount + ' attempts'));
+			} catch(e:Dynamic) {
 				retryCount++;
 				trace('didn\'t make da capsule, trying again');
 				if (retryCount < 1000) _makeDaFuckinCapsuleDammit();
@@ -75,7 +72,6 @@ class VSliceOfLifePauseMenu extends Module {
 	public function onSubStateCloseEnd(event):Void {
 		super.onSubStateCloseEnd(event);
 		if (!(event.targetState is PauseSubState)) return;
-		state = null;
 		if (capsule != null) {
 			if (capsule.songText != null) {
 				if (capsule.songText.moveTimer != null)
