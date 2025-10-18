@@ -12,12 +12,19 @@ import funkin.play.PlayStatePlaylist;
 import funkin.play.PauseSubState;
 import funkin.play.PlayState;
 
+import funkin.audio.FunkinSound;
+
 import funkin.ui.freeplay.FreeplaySongData;
 import funkin.ui.freeplay.FreeplayState;
 import funkin.ui.freeplay.SongMenuItem;
 import funkin.ui.FullScreenScaleMode;
 
 import funkin.util.Constants;
+
+import flixel.tweens.FlxTween;
+import flixel.tweens.FlxEase;
+
+import flixel.util.FlxTimer;
 
 class VSliceOfLifePauseMenu extends Module {
 	public function new():Void {
@@ -45,19 +52,71 @@ class VSliceOfLifePauseMenu extends Module {
 		return song;
 	}
 
+	var subState;
 	override public function onUpdate(event):Void {
 		super.onUpdate(event);
-		if (capsule != null && capsule.doJumpIn)
-			capsule.targetPos.set(capsulePosition[0], capsulePosition[1]);
+		if (capsule != null) {
+			if (capsule.doJumpIn)
+				capsule.targetPos.set(capsulePosition[0], capsulePosition[1]);
+			if (subState.controls.FREEPLAY_FAVORITE && subState.allowInput) {
+				if (capsule.freeplayData.toggleFavorite()) {
+					capsule.favIcon.visible = true;
+					capsule.favIconBlurred.visible = true;
+					capsule.favIcon.animation.play('fav');
+					capsule.favIconBlurred.animation.play('fav');
+					FunkinSound.playOnce(Paths.sound('fav'), 1);
+					capsule.checkClip();
+					capsule.selected = true; // set selected again, so it can run its getter function to initialize movement
+					subState.allowInput = false;
+
+					capsule.doLerp = false;
+					FlxTween.tween(capsule, {y: capsule.y - 5}, 0.1, {ease: FlxEase.expoOut});
+
+					FlxTween.tween(capsule, {y: capsule.y + 5}, 0.1,
+					{
+						ease: FlxEase.expoIn,
+						startDelay: 0.1,
+						onComplete: function(_) {
+							capsule.doLerp = true;
+							subState.allowInput = true;
+						}
+					});
+				} else {
+					capsule.favIcon.animation.play('fav', true, true, 9);
+					capsule.favIconBlurred.animation.play('fav', true, true, 9);
+					FunkinSound.playOnce(Paths.sound('unfav'), 1);
+					new FlxTimer().start(0.2, _ -> {
+						capsule.favIcon.visible = false;
+						capsule.favIconBlurred.visible = false;
+						capsule.checkClip();
+						capsule.selected = true; // set selected again, so it can run its getter function to initialize movement
+					});
+
+					subState.allowInput = false;
+					capsule.doLerp = false;
+					FlxTween.tween(capsule, {y: capsule.y + 5}, 0.1, {ease: FlxEase.expoOut});
+					FlxTween.tween(capsule, {y: capsule.y - 5}, 0.1,
+					{
+						ease: FlxEase.expoIn,
+						startDelay: 0.1,
+						onComplete: function(_) {
+							capsule.doLerp = true;
+							subState.allowInput = true;
+						}
+					});
+				}
+			}
+		}
 	}
 
 	public function onSubStateOpenEnd(event):Void {
 		super.onSubStateOpenEnd(event);
 		if (!(event.targetState is PauseSubState)) return;
+		subState = event.targetState;
 		var retryCount:Int = 0;
 		function _makeDaFuckinCapsuleDammit():Void {
 			try {
-				event.targetState.add(capsule = initCapsule());
+				subState.add(capsule = initCapsule());
 				trace('made da capsule' + (retryCount < 1 ? '' : ' after ' + retryCount + ' attempts'));
 			} catch(e:Dynamic) {
 				retryCount++;
@@ -83,5 +142,6 @@ class VSliceOfLifePauseMenu extends Module {
 				capsule.sparkleTimer.cancel();
 		}
 		capsule = null;
+		subState = null;
 	}
 }

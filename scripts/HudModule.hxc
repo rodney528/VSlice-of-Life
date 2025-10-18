@@ -51,7 +51,7 @@ class VSliceOfLifeHUD extends Module {
 					combo: tallies.combo,
 					maxCombo: tallies.maxCombo,
 					totalNotesHit: tallies.totalNotesHit,
-					totalNotes: /* rankdisplay */true ? tallies.totalNotesHit + tallies.missed : tallies.totalNotes
+					totalNotes: tallies.totalNotesHit + tallies.missed
 				}
 			}
 		) ?? 'SHIT';
