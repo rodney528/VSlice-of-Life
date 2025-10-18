@@ -207,12 +207,12 @@ class VSliceOfLifeHUD extends Module {
 
 	override public function onStateChangeEnd(event):Void {
 		super.onStateChangeEnd(event);
-		if ((event.targetState is ChartEditorState) || (event.targetState is PlayState))
+		if (event.targetState is PlayState)
 			stateOpen();
 	}
 	override public function onStateChangeBegin(event):Void {
 		super.onStateChangeBegin(event);
-		if ((event.targetState is ChartEditorState) || (event.targetState is PlayState))
+		if (event.targetState is PlayState)
 			stateClose();
 	}
 	override public function onSubStateOpenEnd(event):Void {
