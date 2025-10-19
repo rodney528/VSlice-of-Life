@@ -1,3 +1,5 @@
+import funkin.data.story.level.LevelRegistry;
+
 import funkin.modding.module.Module;
 
 import funkin.play.scoring.Scoring;
@@ -18,6 +20,10 @@ import flixel.FlxG;
 class VSliceOfLifeHUD extends Module {
 	public function new() {
 		super('VSlice of Life HUD');
+	}
+	function isFirstSongOfWeek():Bool {
+		// There is no variable to keep track of how far you are into week. There is "PlayStatePlaylist.playlistSongIds" but they remove the earlest slot when a song is completed soo... this was the next best thing I could do.
+		return LevelRegistry.instance.fetchEntry(PlayStatePlaylist.campaignId).getSongs()[0] == PlayState.instance.currentSong.id;
 	}
 
 	var rankSprite:FreeplayRank;
@@ -65,7 +71,7 @@ class VSliceOfLifeHUD extends Module {
 		}
 	}
 	function updateLevelRank(?forceRank:String):Void {
-		if (levelRank != null && (PlayStatePlaylist.isStoryMode && PlayStatePlaylist.campaignScore > 0 && PlayStatePlaylist.playlistSongIds.length > 0)) {
+		if (levelRank != null && (PlayStatePlaylist.isStoryMode && !isFirstSongOfWeek())) {
 			var newRank = getRank(forceRank);
 			if (levelRank.rank != newRank) {
 				levelRank.rank = newRank;
@@ -179,7 +185,7 @@ class VSliceOfLifeHUD extends Module {
 			}
 		}
 		_makeRankSprite();
-		if (PlayStatePlaylist.isStoryMode && PlayStatePlaylist.campaignScore > 0 && PlayStatePlaylist.playlistSongIds.length > 0) {
+		if (PlayStatePlaylist.isStoryMode && !isFirstSongOfWeek()) {
 			var retryCount:Int = 0;
 			function _makeLevelRankSprite():Void {
 				try {
