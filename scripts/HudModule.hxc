@@ -105,7 +105,7 @@ class VSliceOfLifeHUD extends Module {
 			var songRank = rankSprite == null ? null : rankSprite.rank;
 			var levelRank = levelRank == null ? null : levelRank.rank;
 
-			var highestRank = PlayStatePlaylist.isStoryMode ? (compareGT(songRank, levelRank) ? songRank : levelRank) : songRank;
+			var highestRank = PlayStatePlaylist.isStoryMode && !isFirstSongOfWeek() ? (compareGT(songRank, levelRank) ? songRank : levelRank) : songRank;
 			if (highestRank == 'PERFECT' || highestRank == 'PERFECT_GOLD') {
 				if (playerIcon.animation.name == 'confirm' || playerIcon.animation.name == 'confirm-hold') {} else
 					playerIcon.animation.play('confirm', true);
